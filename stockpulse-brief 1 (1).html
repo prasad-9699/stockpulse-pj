@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StockPulse — AI Inventory &amp; Dynamic Pricing Engine · Hackathon Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;0,9..144,800;1,9..144,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg:      #f8f4ef; --bg2:     #f0ebe4; --bg3:     #e8e0d6;
+    --ink:     #1a1814; --ink2:    #4a4640; --ink3:    #8a8478;
+    --rule:    rgba(26,24,20,0.1); --rule2:   rgba(26,24,20,0.18);
+    --accent:  #c45a2a; --accent2: #d97240;
+    --teal:    #1a6b5a; --amber:   #b07d1a; --amber2:  #d49a22;
+    --green:   #2a6b3a; --mono:    'DM Mono', monospace; --serif:   'Fraunces', serif;
+  }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--serif); background: var(--bg); color: var(--ink); min-height: 100vh; line-height: 1.6; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E"); pointer-events: none; z-index: 0; }
+  .page { max-width: 820px; margin: 0 auto; padding: 0 28px 100px; position: relative; z-index: 1; }
+  .masthead { border-bottom: 2px solid var(--ink); padding: 48px 0 28px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 20px; }
+  .masthead-kicker { font-family: var(--mono); font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--ink3); margin-bottom: 12px; }
+  .masthead-title { font-size: clamp(38px,6vw,62px); font-weight: 800; line-height: 0.95; letter-spacing: -0.03em; font-style: italic; }
+  .masthead-title em { font-style: normal; color: var(--accent); }
+  .masthead-meta { text-align: right; font-family: var(--mono); font-size: 11px; color: var(--ink3); line-height: 2; }
+  .masthead-meta strong { color: var(--ink); font-size: 13px; display: block; }
+  .byline { display: flex; border-bottom: 1px solid var(--rule2); margin-bottom: 36px; overflow-x: auto; scrollbar-width: none; }
+  .byline::-webkit-scrollbar { display: none; }
+  .tab { font-family: var(--mono); font-size: 11px; padding: 12px 20px; background: none; border: none; border-bottom: 2px solid transparent; margin-bottom: -1px; color: var(--ink3); cursor: pointer; letter-spacing: 0.08em; text-transform: uppercase; white-space: nowrap; transition: color 0.15s, border-color 0.15s; }
+  .tab:hover { color: var(--ink2); }
+  .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab.teal-tab { color: var(--teal); }
+  .tab.teal-tab.active { color: var(--teal); border-bottom-color: var(--teal); }
+  .panel { display: none; }
+  .panel.active { display: block; }
+  .section { margin-bottom: 32px; }
+  .section-rule { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .section-rule-label { font-family: var(--mono); font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--ink3); white-space: nowrap; }
+  .section-rule-line { flex: 1; height: 1px; background: var(--rule); }
+  .prose { font-size: 14px; color: var(--ink2); line-height: 1.85; margin-bottom: 16px; }
+  .prose strong { color: var(--ink); font-weight: 600; }
+  .prose code { font-family: var(--mono); font-size: 12px; background: var(--bg3); border: 1px solid var(--rule2); padding: 1px 6px; border-radius: 3px; color: var(--accent); }
+  .prose ul { padding-left: 20px; margin: 8px 0; }
+  .prose li { margin-bottom: 5px; }
+  .card { background: white; border: 1px solid var(--rule2); border-radius: 4px; padding: 22px 24px; margin-bottom: 14px; }
+  .card-head { display: flex; gap: 16px; align-items: flex-start; margin-bottom: 12px; }
+  .card-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--accent); padding-top: 4px; min-width: 32px; }
+  .card-tag.teal { color: var(--teal); }
+  .card-tag.amber { color: var(--amber); }
+  .card-title { font-size: 16px; font-weight: 600; color: var(--ink); line-height: 1.3; margin-bottom: 6px; }
+  .card-pills { display: flex; flex-wrap: wrap; gap: 5px; }
+  .pill { font-family: var(--mono); font-size: 10px; padding: 2px 9px; border-radius: 2px; border: 1px solid var(--rule2); color: var(--ink3); letter-spacing: 0.05em; }
+  .pill.accent { border-color: rgba(196,90,42,0.3); color: var(--accent); background: rgba(196,90,42,0.05); }
+  .pill.teal { border-color: rgba(26,107,90,0.3); color: var(--teal); background: rgba(26,107,90,0.05); }
+  .pill.amber { border-color: rgba(176,125,26,0.3); color: var(--amber); background: rgba(176,125,26,0.05); }
+  .card-body { font-size: 13px; color: var(--ink2); line-height: 1.85; margin-left: 48px; }
+  .card-body ul { padding-left: 18px; margin: 8px 0; }
+  .card-body li { margin-bottom: 4px; }
+  .card-body code { font-family: var(--mono); font-size: 11.5px; background: var(--bg2); border: 1px solid var(--rule2); padding: 1px 5px; border-radius: 3px; color: var(--accent); }
+  .card-body strong { color: var(--ink); font-weight: 600; }
+  .callout { border-radius: 3px; padding: 12px 16px; margin: 12px 0 0; font-size: 12.5px; line-height: 1.75; }
+  .callout-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em; font-weight: 500; margin-bottom: 5px; }
+  .callout.warn { background: rgba(176,125,26,0.08); border-left: 3px solid var(--amber); color: #5a3e08; }
+  .callout.warn .callout-label { color: var(--amber); }
+  .callout.info { background: rgba(26,107,90,0.07); border-left: 3px solid var(--teal); color: #0d3d30; }
+  .callout.info .callout-label { color: var(--teal); }
+  .callout.note { background: rgba(196,90,42,0.07); border-left: 3px solid var(--accent); color: #5a2a10; }
+  .callout.note .callout-label { color: var(--accent); }
+  .callout.good { background: rgba(42,107,58,0.07); border-left: 3px solid var(--green); color: #163320; }
+  .callout.good .callout-label { color: var(--green); }
+  .roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 14px; }
+  @media (max-width: 560px) { .roadmap { grid-template-columns: 1fr; } }
+  .roadmap-card { background: white; border: 1px solid var(--rule2); border-top: 3px solid var(--rule2); border-radius: 3px; padding: 16px 18px; }
+  .roadmap-card.sprint2 { border-top-color: var(--teal); }
+  .roadmap-card.sprint3 { border-top-color: var(--amber); }
+  .roadmap-sprint { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.15em; margin-bottom: 10px; }
+  .roadmap-sprint.sprint2 { color: var(--teal); }
+  .roadmap-sprint.sprint3 { color: var(--amber); }
+  .roadmap-items { list-style: none; font-size: 12.5px; color: var(--ink2); line-height: 1.9; }
+  .roadmap-items li::before { content: '— '; color: var(--ink3); font-family: var(--mono); font-size: 10px; }
+  .roadmap-items code { font-family: var(--mono); font-size: 10.5px; background: var(--bg2); border: 1px solid var(--rule); padding: 0 4px; border-radius: 2px; color: var(--ink2); }
+  .adr-card { background: white; border: 1px solid var(--rule2); border-left: 3px solid var(--ink3); border-radius: 0 4px 4px 0; padding: 16px 20px; margin-bottom: 10px; }
+  .adr-card.teal { border-left-color: var(--teal); }
+  .adr-q { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 7px; }
+  .adr-q span { font-family: var(--mono); font-size: 10px; color: var(--ink3); margin-right: 8px; letter-spacing: 0.08em; }
+  .adr-q span.teal { color: var(--teal); }
+  .adr-detail { font-size: 12.5px; color: var(--ink2); line-height: 1.8; }
+  .adr-detail code { font-family: var(--mono); font-size: 11px; background: var(--bg2); border: 1px solid var(--rule); padding: 0 4px; border-radius: 2px; color: var(--accent); }
+  .score-strip { display: grid; grid-template-columns: repeat(auto-fit,minmax(100px,1fr)); gap: 8px; margin-bottom: 18px; }
+  .score-cell { background: white; border: 1px solid var(--rule2); border-radius: 3px; padding: 14px; text-align: center; }
+  .score-num { font-family: var(--mono); font-size: 26px; font-weight: 500; color: var(--ink); }
+  .score-num.accent { color: var(--accent); }
+  .score-num.teal { color: var(--teal); }
+  .score-num.green { color: var(--green); font-size: 20px; }
+  .score-label { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); margin-top: 4px; line-height: 1.5; }
+  .rubric { background: white; border: 1px solid var(--rule2); border-radius: 4px; overflow: hidden; margin-bottom: 14px; }
+  .rubric table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  .rubric th { font-family: var(--mono); font-size: 9px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink3); padding: 10px 14px; text-align: left; border-bottom: 1px solid var(--rule2); background: var(--bg2); }
+  .rubric td { padding: 10px 14px; border-bottom: 1px solid var(--rule); color: var(--ink2); vertical-align: top; line-height: 1.6; }
+  .rubric tr:last-child td { border-bottom: none; }
+  .rubric td:first-child { color: var(--ink); font-weight: 600; white-space: nowrap; font-family: var(--mono); font-size: 11px; }
+  .rubric td:last-child { font-family: var(--mono); color: var(--accent); text-align: right; white-space: nowrap; font-size: 11px; }
+  .phases { display: flex; flex-direction: column; gap: 12px; }
+  .phase { background: white; border: 1px solid var(--rule2); border-radius: 4px; padding: 18px 22px; display: grid; grid-template-columns: 110px 1fr; gap: 20px; align-items: start; }
+  .phase.teal { border-left: 3px solid var(--teal); }
+  .phase-time { font-family: var(--mono); font-size: 12px; color: var(--accent); font-weight: 500; line-height: 1.4; padding-top: 2px; }
+  .phase.teal .phase-time { color: var(--teal); }
+  .phase-time span { display: block; font-size: 10px; color: var(--ink3); font-weight: 400; margin-top: 3px; }
+  .phase-name { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+  .phase-detail { font-size: 12.5px; color: var(--ink2); line-height: 1.75; }
+  .phase-detail code { font-family: var(--mono); font-size: 11px; background: var(--bg2); border: 1px solid var(--rule); padding: 0 4px; border-radius: 2px; color: var(--accent); }
+  @media (max-width: 540px) { .phase { grid-template-columns: 1fr; } }
+  .spec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  @media (max-width: 560px) { .spec-grid { grid-template-columns: 1fr; } }
+  .spec-card { background: white; border: 1px solid var(--rule2); border-radius: 4px; padding: 16px 18px; }
+  .spec-title { font-family: var(--mono); font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink3); margin-bottom: 12px; }
+  .spec-title.accent { color: var(--accent); }
+  .spec-title.teal { color: var(--teal); }
+  .spec-title.amber { color: var(--amber); }
+  .spec-body { font-family: var(--mono); font-size: 11.5px; color: var(--ink2); line-height: 1.9; }
+  .spec-body code { background: var(--bg2); border: 1px solid var(--rule); padding: 0 4px; border-radius: 2px; color: var(--accent); font-size: 11px; }
+  .addendum-header { background: var(--ink); color: var(--bg); border-radius: 4px 4px 0 0; padding: 12px 18px; display: flex; align-items: center; gap: 14px; }
+  .addendum-title { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; flex: 1; }
+  .addendum-tag { font-family: var(--mono); font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; }
+  .code-block { background: #1a1814; border: 1px solid rgba(255,255,255,0.08); border-top: none; border-radius: 0 0 4px 4px; padding: 20px 22px; margin-bottom: 20px; overflow-x: auto; }
+  .code-block pre { font-family: var(--mono); font-size: 12px; color: #d4cfc4; line-height: 1.75; white-space: pre; }
+  .code-block .cm { color: #6b8c6b; }
+  .code-block .kw { color: #c47f4a; }
+  .code-block .st { color: #8fbc7a; }
+  .code-block .an { color: #7a9fbf; }
+  .code-block .ty { color: #bf9f6a; }
+  .code-block .nu { color: #9fbf8a; }
+  @media print { body { background: white; } .byline { display: none; } .panel { display: block !important; margin-bottom: 40px; } }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <div>
+      <div class="masthead-kicker">StockPulse · Hackathon · Solo</div>
+      <h1 class="masthead-title"><em>AI</em> Inventory &amp;<br>Dynamic Pricing</h1>
+    </div>
+    <div class="masthead-meta">
+      <strong>5 hours</strong>
+      Solo · Individual<br>
+      Spring Boot 3.x<br>
+      React 18 or Angular 17<br>
+      118 pts total
+    </div>
+  </div>
+
+  <div class="byline" style="margin-top:20px">
+    <button class="tab active" onclick="sw('brief',this)">Brief</button>
+    <button class="tab" onclick="sw('tasks',this)">Tasks</button>
+    <button class="tab" onclick="sw('adr',this)">ADR Guide</button>
+    <button class="tab" onclick="sw('extensions',this)">Extensions</button>
+    <button class="tab teal-tab" onclick="sw('depth',this)">Design Depth</button>
+    <button class="tab" onclick="sw('scoring',this)">Scoring &amp; Timeline</button>
+    <button class="tab" onclick="sw('spec',this)">Tech Spec</button>
+  </div>
+
+  <!-- BRIEF -->
+  <div class="panel active" id="panel-brief">
+    <div class="section">
+      <div class="section-rule"><span class="section-rule-label">The scenario</span><div class="section-rule-line"></div></div>
+      <div class="prose">
+        ShopStream runs an online store with hundreds of SKUs across electronics, apparel, and home goods. Prices are set manually and reviewed weekly. Inventory levels update in real time as orders flow in — but pricing and replenishment decisions lag behind. When a product sells faster than expected, stock runs low while the price stays flat. When demand suddenly spikes on a trending item, the merchandising team hears about it from a Slack message, opens a spreadsheet, and debates a price change over email.<br><br>
+        When stock drops critically low, someone manually decides whether to raise the price to protect remaining inventory, run a clearance discount to move units, or trigger a reorder. When a viral product spikes, someone guesses at a price increase. It works — but it's slow, inconsistent, and fails silently when no one is watching the dashboard.<br><br>
+        <strong>That's the problem you're solving.</strong> When inventory crosses a threshold or demand velocity spikes, your system detects it automatically, uses AI to recommend a price adjustment <em>and</em> a reorder quantity, and puts both recommendations in front of merchandising for approval — without anyone having to ask for it.
+      </div>
+      <div class="callout info">
+        <div class="callout-label">Scope for this sprint</div>
+        You're building a reactive commerce advisor — not a full storefront, cart, or payment system. Product catalog CRUD, competitor scraping, and automated purchase orders are sprint 2 and 3. Your job right now is to nail the inventory-signal → AI recommendation → human approval loop for both pricing and replenishment, and build the foundation that makes those extensions straightforward to add.
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-rule"><span class="section-rule-label">What you're building</span><div class="section-rule-line"></div></div>
+      <div class="prose">
+        <ul>
+          <li><strong>A domain model</strong> — <code>Product</code>, <code>InventorySnapshot</code>, <code>PricingSuggestion</code>, <code>ReorderSuggestion</code> with explicit state machines and extension points for sprint 2 fields</li>
+          <li><strong>A commerce engine</strong> — pluggable strategy interface with rule-based and AI-powered implementations for pricing (and a lightweight rule-based reorder baseline), switchable at runtime without a restart</li>
+          <li><strong>An AI commerce advisor</strong> — LLM examines product context, stock level, demand velocity, and trigger situation; returns recommended price, reorder quantity, confidence scores, and plain-English reasoning merchandising can act on</li>
+          <li><strong>An agentic recommendation loop</strong> — when stock drops below threshold or demand spikes, the system queues pricing and reorder suggestions async for approval — no button click required</li>
+          <li><strong>A merchandising console</strong> — React or Angular UI showing pending suggestions with AI reasoning, accept/reject controls, and badges distinguishing auto-triggered vs manual requests</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-rule"><span class="section-rule-label">A few things worth knowing</span><div class="section-rule-line"></div></div>
+      <div class="prose">
+        <ul>
+          <li>This is a solo effort — every line of code and every architectural call is yours alone.</li>
+          <li>AI coding tools — Cursor, Copilot, Claude — are fair game and encouraged. Understand what you've shipped; we'll walk through it together afterwards.</li>
+          <li>The walkthrough is a conversation, not an exam. Trace an order reducing stock → low inventory trigger → suggestions appearing → accept updating price.</li>
+          <li>Submit: public GitHub repo, 5-minute demo video, and <code>ADR.md</code>. The ADR matters as much as the code.</li>
+          <li>Two addenda at the end — seed script and LLM gateway utility — save setup time on things that don't carry evaluation signal.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- TASKS -->
+  <div class="panel" id="panel-tasks">
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-tag">T-1</div>
+        <div>
+          <div class="card-title">Domain model &amp; API</div>
+          <div class="card-pills"><span class="pill accent">Backend</span><span class="pill">20 pts</span><span class="pill">~50 min</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        Start here — state machines before field lists; the transitions matter more than the column names.<br><br>
+        <strong>Product</strong> — SKU, name, category (<code>ELECTRONICS</code>, <code>APPAREL</code>, <code>HOME</code>), current price, stock level, reorder threshold, demand velocity (orders in last 24h), lifecycle: <code>ACTIVE → PRICE_REVIEW_PENDING → ACTIVE</code> (and <code>OUT_OF_STOCK</code> when stock = 0)<br><br>
+        <strong>PricingSuggestion</strong> — product reference, current price, recommended price, change direction (<code>INCREASE</code>, <code>DECREASE</code>, <code>HOLD</code>), confidence (0.0–1.0), reasoning, status (<code>PENDING → ACCEPTED | REJECTED</code>), triggerReason (<code>INITIAL</code>, <code>INVENTORY_LOW</code>, <code>DEMAND_SPIKE</code>, <code>MANUAL</code>)<br><br>
+        <strong>ReorderSuggestion</strong> — product reference, current stock, recommended quantity, suggested lead time days, confidence, reasoning, status (<code>PENDING → ACCEPTED | REJECTED</code>), same triggerReason enum — threads through the agentic loop and UI badges<br><br>
+        <strong>Endpoints to wire up:</strong>
+        <ul>
+          <li><code>POST /products</code> — create product with initial stock and price</li>
+          <li><code>GET /products?status=&amp;category=</code> — filterable catalog list</li>
+          <li><code>PATCH /products/{id}/stock</code> — update stock level; fires agentic loop if below reorder threshold</li>
+          <li><code>POST /products/{id}/orders</code> — simulate a sale (decrements stock, bumps demand velocity); may fire loop on spike or low stock</li>
+          <li><code>POST /products/{id}/suggest-pricing</code> — on-demand pricing suggestion</li>
+          <li><code>POST /products/{id}/suggest-reorder</code> — on-demand reorder suggestion</li>
+          <li><code>PATCH /pricing-suggestions/{id}</code> — accept/reject; accept updates <code>Product.currentPrice</code></li>
+          <li><code>PATCH /reorder-suggestions/{id}</code> — accept/reject; accept updates stock (simulated inbound shipment)</li>
+        </ul>
+        <div class="callout info">
+          <div class="callout-label">Designing for what's coming</div>
+          Sprint 2 brings competitor prices, margin floors, and supplier catalogs. A nullable <code>costPrice</code> or <code>supplierId</code> placeholder now costs nothing. Your ADR should touch on at least one extension field.
+        </div>
+        <div class="callout warn">
+          <div class="callout-label">Seed data</div>
+          Addendum A has 8 products — one seeded near reorder threshold for the demo path.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-tag">T-2</div>
+        <div>
+          <div class="card-title">Pluggable commerce engine</div>
+          <div class="card-pills"><span class="pill accent">Backend · Design Pattern</span><span class="pill">25 pts</span><span class="pill">~55 min</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        Two contracts — or one unified <code>CommerceAdvisor</code> returning both pricing and reorder recommendations. Your ADR should justify the choice.<br><br>
+        <strong>Rule-based pricing strategy</strong> — if stock &lt; reorder threshold, recommend 10% price increase; if demand velocity &gt; 2× category average, recommend 5% increase; otherwise HOLD. Deterministic, no external deps, solid fallback.<br><br>
+        <strong>Rule-based reorder strategy</strong> — recommend quantity = (reorder threshold × 3) − current stock, minimum 1. Simple baseline for AI to improve on.<br><br>
+        <strong>AI strategy</strong> — T-3; design interfaces with combined pricing + reorder output in mind.<br><br>
+        Active strategy switchable via config at runtime — no code change, no restart.<br><br>
+        Wire on-demand endpoints to run active strategy and persist suggestions.
+        <div class="callout warn">
+          <div class="callout-label">Two callers, one interface</div>
+          HTTP on-demand endpoints and async event handlers in the agentic loop must use the same contracts without modification.
+        </div>
+        <div class="callout info">
+          <div class="callout-label">Sprint 2 heads up</div>
+          <code>CompetitorAwareStrategy</code> should mean implementing the contract and registering — nothing more.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-tag">T-3</div>
+        <div>
+          <div class="card-title">AI commerce advisor</div>
+          <div class="card-pills"><span class="pill amber">AI Integration</span><span class="pill">25 pts</span><span class="pill">~55 min</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        AI implementation of your commerce contracts. Give the LLM structured context:
+        <ul>
+          <li>Product name, category, current price, stock level, reorder threshold</li>
+          <li>Demand velocity vs category peers (include category average in prompt)</li>
+          <li>Trigger context — inventory low vs demand spike vs manual request</li>
+        </ul>
+        Expect back for pricing: recommended price, change direction, confidence, reasoning.<br>
+        Expect back for reorder: recommended quantity, confidence, reasoning.<br><br>
+        A few things worth getting right:
+        <ul>
+          <li>Validate recommended price is positive and within sane bounds (e.g. not 10× current without flagging)</li>
+          <li>Validate reorder quantity is a positive integer</li>
+          <li>Handle timeouts, quota errors, unparseable JSON — fall back to rule-based strategies</li>
+          <li>Keep AI calls off the critical request path where possible</li>
+        </ul>
+        <div class="callout warn">
+          <div class="callout-label">Two prompts, not one</div>
+          Inventory-low and demand-spike are genuinely different merchandising decisions. Low stock might mean raise price to protect inventory <em>or</em> clearance to move units — the model needs trigger context to reason well. Spike might mean capitalize with a modest increase. If both prompts are the same document with one field added, the model isn't getting what it needs.
+        </div>
+        <div class="callout good">
+          <div class="callout-label">Addendum B</div>
+          Working <code>callLLM(String prompt)</code> for Gemini, Groq, and Ollama. Prompt construction, parsing, validation, and fallback are yours.
+        </div>
+        <div class="callout info">
+          <div class="callout-label">Bonus · +5 pts</div>
+          <code>POST /products/{id}/suggest-pricing/stream</code> — SSE token stream of AI reasoning before the suggestion lands.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-tag teal">T-4</div>
+        <div>
+          <div class="card-title">Agentic recommendation loop</div>
+          <div class="card-pills"><span class="pill teal">Agentic</span><span class="pill">15 pts</span><span class="pill">~45 min</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        The heart of the system — inventory signals drive recommendations automatically.<br><br>
+        <strong>Trigger A — inventory low:</strong> when <code>PATCH /products/{id}/stock</code> or <code>POST /products/{id}/orders</code> leaves stock &lt; reorder threshold, async run creates <code>PricingSuggestion</code> and <code>ReorderSuggestion</code> with <code>triggerReason = INVENTORY_LOW</code>.<br><br>
+        <strong>Trigger B — demand spike:</strong> when a single order or velocity update pushes demand velocity above a configurable threshold (e.g. 3× category average), async run creates suggestions with <code>triggerReason = DEMAND_SPIKE</code>.<br><br>
+        Get these right:
+        <ul>
+          <li>Stock/order endpoints return immediately — recommendation generation is fully async</li>
+          <li>Suggestions surface in UI on next poll</li>
+          <li>Skip duplicate <code>PENDING</code> suggestions for same product + triggerReason + suggestion type</li>
+          <li>AI failure during async path → rule-based fallback for both suggestion types — silent drop is worse than a rule-based recommendation</li>
+          <li>Accepting pricing suggestion updates <code>currentPrice</code>; accepting reorder suggestion increments <code>stockLevel</code> (simulated inbound)</li>
+        </ul>
+        <div class="callout info">
+          <div class="callout-label">The loop in plain terms</div>
+          Observe (stock/velocity signal) → reason (what should price and replenishment be?) → act (queue suggestions) → checkpoint (merchandising approves). The system proposes; humans publish prices and place orders.
+        </div>
+        <div class="callout warn">
+          <div class="callout-label">Wiring suggestion</div>
+          Spring <code>@EventListener</code> + <code>@Async</code>, or <code>ApplicationEventPublisher</code>, are clean decoupling options. A scheduled poller isn't quite right — the loop should fire because something changed, not because a timer ticked.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-tag">T-5</div>
+        <div>
+          <div class="card-title">Merchandising console</div>
+          <div class="card-pills"><span class="pill">React 18 or Angular 17</span><span class="pill">12 pts floor · +8 pts ceiling</span><span class="pill">~40 min</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        Build the interface a merchandiser opens when inventory alerts fire. Doesn't need to be beautiful — needs to show the agentic loop end-to-end.<br><br>
+        <strong>Floor:</strong>
+        <ul>
+          <li>Products in <code>PRICE_REVIEW_PENDING</code> or with pending suggestions — inline pricing and reorder suggestions with confidence and AI reasoning</li>
+          <li>Accept/Reject for both suggestion types</li>
+          <li>Badges for <code>INVENTORY_LOW</code> vs <code>DEMAND_SPIKE</code> vs manual — makes the loop visible</li>
+          <li>Product list showing stock level, current price, demand velocity, status</li>
+          <li>Simulate sale button or stock PATCH for demo without curl</li>
+          <li>Polling or refresh; loading and error states</li>
+        </ul>
+        <strong>Ceiling:</strong> full catalog board, margin display, price history chart, category filters, stock heatmap.
+        <div class="callout info">
+          <div class="callout-label">On priorities</div>
+          Backend and systems design carry more weight than UI polish. A clean functional floor that shows auto-triggered badges beats an elaborate ceiling that cost you the agentic loop or ADR.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-tag">T-6</div>
+        <div>
+          <div class="card-title">ADR + live walkthrough</div>
+          <div class="card-pills"><span class="pill">Architecture ownership</span><span class="pill">20 pts</span></div>
+        </div>
+      </div>
+      <div class="card-body">
+        Four solid entries: Context → Options → Decision → Tradeoffs.<br><br>
+        Cover: commerce logic placement, strategy switchability, LLM failure handling, agentic loop decoupling.<br><br>
+        High-weight entries:
+        <ul>
+          <li><strong>Unified vs split contracts</strong> — one AI call returning pricing + reorder vs two separate calls</li>
+          <li><strong>Extensibility</strong> — point to where competitor pricing or margin floors plug in</li>
+          <li><strong>Deliberate exclusions</strong> — frame as priority decisions, not time excuses</li>
+        </ul>
+        Walkthrough: trace order → stock drop → async suggestions → accept price change.
+      </div>
+    </div>
+  </div>
+
+  <!-- ADR -->
+  <div class="panel" id="panel-adr">
+    <div class="prose" style="margin-bottom:24px">
+      The ADR records thinking that shaped your code — captured entry by entry as you make each call. Format: <strong>Context → Options → Decision → Tradeoffs</strong>. Write each entry right after the decision, not at the end when you're tired.
+    </div>
+
+    <div class="section-rule" style="margin-bottom:18px"><span class="section-rule-label">The format</span><div class="section-rule-line"></div></div>
+    <div style="background:white;border:1px solid var(--rule2);border-radius:4px;padding:22px 24px;margin-bottom:24px;font-size:13px;color:var(--ink2);line-height:1.85">
+      <strong>Context</strong> — What situation requires a decision? What constraints apply?<br><br>
+      <strong>Options</strong> — At least two approaches considered.<br><br>
+      <strong>Decision</strong> — What you chose and why — connect to testability, extensibility, sprint 2 roadmap.<br><br>
+      <strong>Tradeoffs</strong> — What you gave up. Every decision has a cost.
+    </div>
+
+    <div class="section-rule" style="margin-bottom:18px"><span class="section-rule-label">The five decisions to cover</span><div class="section-rule-line"></div></div>
+
+    <div class="adr-card"><div class="adr-q"><span>1</span> Where does commerce logic live?</div><div class="adr-detail">Service layer, domain model, or dedicated advisor component? What boundary prevents a service class accumulating pricing, reorder, events, and persistence?</div></div>
+    <div class="adr-card"><div class="adr-q"><span>2</span> Unified AI call vs separate pricing/reorder calls?</div><div class="adr-detail">One prompt returning both recommendations is cheaper and faster; separate calls allow independent fallbacks and clearer contracts. Defend your choice.</div></div>
+    <div class="adr-card"><div class="adr-q"><span>3</span> How does runtime strategy switching work?</div><div class="adr-detail">Bean map, factory, registry — works from HTTP and async paths; sprint 2's third strategy plugs in without touching existing code.</div></div>
+    <div class="adr-card"><div class="adr-q"><span>4</span> LLM failure handling</div><div class="adr-detail">Timeouts, malformed JSON, absurd prices (e.g. $0 or $999,999). Async path must still produce rule-based suggestions.</div></div>
+    <div class="adr-card teal"><div class="adr-q"><span class="teal">5</span> Agentic loop trigger and decoupling</div><div class="adr-detail">How stock updates and order events fire async recommendation without blocking the response. Idempotency on repeated triggers.</div></div>
+    <div class="adr-card teal"><div class="adr-q"><span class="teal">6</span> Extensibility and exclusions</div><div class="adr-detail">Point to a sprint 2 seam in actual code. Name what you deferred and why.</div></div>
+  </div>
+
+  <!-- EXTENSIONS -->
+  <div class="panel" id="panel-extensions">
+    <div class="prose" style="margin-bottom:20px">Not building today — but worth having in your head when modeling entities and interfaces.</div>
+    <div class="roadmap">
+      <div class="roadmap-card sprint2">
+        <div class="roadmap-sprint sprint2">Sprint 2 — Competitors &amp; Margins</div>
+        <ul class="roadmap-items">
+          <li><code>costPrice</code> and <code>marginFloor</code> on products — AI must not recommend below floor</li>
+          <li><code>CompetitorAwareStrategy</code> — third pricing option using scraped competitor data</li>
+          <li>Supplier catalog — reorder suggestions name preferred supplier</li>
+          <li>Category-level pricing rules — electronics vs apparel caps</li>
+          <li>Price change cooldown — no second suggestion within N hours</li>
+        </ul>
+      </div>
+      <div class="roadmap-card sprint3">
+        <div class="roadmap-sprint sprint3">Sprint 3 — Automation &amp; Storefront</div>
+        <ul class="roadmap-items">
+          <li>Auto-apply high-confidence pricing when within guardrails</li>
+          <li>Auto PO generation on reorder accept — integrate supplier API</li>
+          <li>Customer-facing price display API for storefront</li>
+          <li>AI uses competitor API as tool before recommending</li>
+          <li>Bundle pricing across related SKUs</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- DEPTH -->
+  <div class="panel" id="panel-depth">
+    <div class="adr-card teal">
+      <div class="adr-q"><span class="teal">AGT-1</span> What makes this agentic rather than automated?</div>
+      <div class="adr-detail">Trigger is a specific inventory or demand signal change, not a weekly cron. Action is queuing suggestions, not publishing prices. Checkpoint is merchandising approval before price goes live.</div>
+    </div>
+    <div class="adr-card teal">
+      <div class="adr-q"><span class="teal">AGT-2</span> Low stock — raise price or clearance?</div>
+      <div class="adr-detail">Genuinely ambiguous merchandising decision. AI should explain tradeoffs in reasoning, not just output a number. We'll discuss your prompt design in the walkthrough.</div>
+    </div>
+    <div class="adr-card teal">
+      <div class="adr-q"><span class="teal">AGT-3</span> Two triggers, shared or separate handlers?</div>
+      <div class="adr-detail">INVENTORY_LOW and DEMAND_SPIKE may both fire for the same product. Idempotency and whether one handler or two — worth an ADR entry.</div>
+    </div>
+    <div class="adr-card teal">
+      <div class="adr-q"><span class="teal">AGT-4</span> Accept side effects</div>
+      <div class="adr-detail">Accepting pricing updates live price; accepting reorder simulates inbound stock. Should product return to ACTIVE? What if both suggestions pending — accept one, reject other?</div>
+    </div>
+  </div>
+
+  <!-- SCORING -->
+  <div class="panel" id="panel-scoring">
+    <div class="score-strip">
+      <div class="score-cell"><div class="score-num accent">20</div><div class="score-label">Domain &amp; API</div></div>
+      <div class="score-cell"><div class="score-num accent">25</div><div class="score-label">Commerce engine</div></div>
+      <div class="score-cell"><div class="score-num accent">25</div><div class="score-label">AI integration</div></div>
+      <div class="score-cell"><div class="score-num teal">15</div><div class="score-label">Agentic loop</div></div>
+      <div class="score-cell"><div class="score-num accent">12</div><div class="score-label">UI floor</div></div>
+      <div class="score-cell"><div class="score-num accent">20</div><div class="score-label">ADR + walkthrough</div></div>
+      <div class="score-cell"><div class="score-num green">+8+5</div><div class="score-label">UI ceiling · SSE</div></div>
+    </div>
+
+    <div class="rubric">
+      <table>
+        <thead><tr><th>Area</th><th>What we're looking for</th><th>Pts</th></tr></thead>
+        <tbody>
+          <tr><td>Entity design</td><td>Clean state machines, pricing + reorder suggestions linked to triggers, extension placeholders visible</td><td>8</td></tr>
+          <tr><td>API correctness</td><td>Stock updates, simulated orders, accept updates price/stock atomically</td><td>7</td></tr>
+          <tr><td>Persistence</td><td>JPA correct, app runs from README in under 5 minutes</td><td>5</td></tr>
+          <tr><td>Commerce contract</td><td>Interface before implementations; HTTP + async callers share contracts</td><td>10</td></tr>
+          <tr><td>Runtime switchability</td><td>Strategy changes via config without restart</td><td>8</td></tr>
+          <tr><td>Pattern justification</td><td>ADR defends unified vs split contracts and strategy pattern</td><td>7</td></tr>
+          <tr><td>Inventory-low prompt</td><td>Trigger context, stock vs threshold, merchandising tradeoffs in prompt</td><td>8</td></tr>
+          <tr><td>Demand-spike prompt</td><td>Genuinely different from low-stock; velocity context included</td><td>8</td></tr>
+          <tr><td>AI resilience</td><td>Bounds validation, fallbacks, async path never silent-drops</td><td>9</td></tr>
+          <tr><td>Agentic loop</td><td>Event-driven, idempotent, both suggestion types on trigger</td><td>7</td></tr>
+          <tr><td>Human checkpoint</td><td>Prices don't change without accept; named in ADR</td><td>8</td></tr>
+          <tr><td>UI floor</td><td>Both suggestion types, badges, simulate sale, accept/reject wired</td><td>12</td></tr>
+          <tr><td>ADR quality</td><td>Four+ entries with tradeoffs; extensibility points to code</td><td>10</td></tr>
+          <tr><td>Walkthrough</td><td>Trace order → low stock → suggestions → accept price</td><td>10</td></tr>
+          <tr><td>UI ceiling</td><td>Catalog board, margin, history — proportional</td><td>+8</td></tr>
+          <tr><td>SSE bonus</td><td>Token stream end-to-end</td><td>+5</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section-rule" style="margin: 32px 0 18px"><span class="section-rule-label">Suggested timeline</span><div class="section-rule-line"></div></div>
+    <div class="phases">
+      <div class="phase"><div class="phase-time">Phase 1<span>~15–20 min</span></div><div><div class="phase-name">Read, sketch, decide</div><div class="phase-detail">Entities, unified vs split AI calls, trigger thresholds. ADR before code.</div></div></div>
+      <div class="phase"><div class="phase-time">Phase 2<span>~60–75 min</span></div><div><div class="phase-name">Domain, API, rule strategies</div><div class="phase-detail">Products, suggestions, stock/order endpoints, rule-based pricing + reorder, switchability.</div></div></div>
+      <div class="phase"><div class="phase-time">Phase 3<span>~55–65 min</span></div><div><div class="phase-name">AI advisor + prompts</div><div class="phase-detail">Two prompts in plain text first. Implement, validate bounds, test broken LLM.</div></div></div>
+      <div class="phase teal"><div class="phase-time">Phase 4<span>~45–55 min</span></div><div><div class="phase-name">Agentic loop</div><div class="phase-detail">Stock low + demand spike triggers. Test simulate order on seeded product.</div></div></div>
+      <div class="phase"><div class="phase-time">Phase 5<span>~40–50 min</span></div><div><div class="phase-name">Merchandising console</div><div class="phase-detail">Pending suggestions, badges, simulate sale, accept updates price.</div></div></div>
+      <div class="phase"><div class="phase-time">Phase 6<span>~30–40 min</span></div><div><div class="phase-name">ADR, demo, submit</div><div class="phase-detail">Demo shows auto-triggered path after simulated sale drops stock below threshold.</div></div></div>
+    </div>
+    <div class="callout warn" style="margin-top:16px">
+      <div class="callout-label">If running behind</div>
+      Drop SSE bonus first. Then UI ceiling. Protect agentic loop and ADR — highest evaluation signal for commerce systems design.
+    </div>
+  </div>
+
+  <!-- SPEC -->
+  <div class="panel" id="panel-spec">
+    <div class="spec-grid">
+      <div class="spec-card"><div class="spec-title accent">Backend</div><div class="spec-body">Java 17+ · Spring Boot 3.x · Maven/Gradle · JPA · Validation · H2/Postgres · CORS <code>localhost:5173</code> / <code>4200</code></div></div>
+      <div class="spec-card"><div class="spec-title amber">LLM — choose one</div><div class="spec-body">Gemini 1.5 Flash · Groq + Llama 3.1 · Ollama local<br><br>Pricing output:<br><code>{"recommendedPrice":29.99,"direction":"INCREASE","confidence":0.82,"reasoning":"..."}</code><br><br>Reorder output:<br><code>{"recommendedQuantity":150,"confidence":0.78,"reasoning":"..."}</code></div></div>
+      <div class="spec-card"><div class="spec-title teal">Frontend</div><div class="spec-body">React 18 (Vite) or Angular 17 — document in ADR</div></div>
+      <div class="spec-card"><div class="spec-title">Submission</div><div class="spec-body">Public GitHub · <code>/backend</code> + <code>/frontend</code> · <code>README.md</code> under 5 min · <code>ADR.md</code> required · 5-min demo showing inventory-low auto path</div></div>
+    </div>
+  </div>
+
+  <!-- ADDENDA -->
+  <div id="addenda" style="margin-top:48px">
+    <div style="display:flex;align-items:center;gap:0;margin-bottom:28px">
+      <div style="flex:1;height:1px;background:var(--rule2)"></div>
+      <div style="font-family:var(--mono);font-size:10px;letter-spacing:0.18em;text-transform:uppercase;color:var(--bg);background:var(--ink);padding:5px 16px;border-radius:2px;margin:0 16px">Reference · Always available</div>
+      <div style="flex:1;height:1px;background:var(--rule2)"></div>
+    </div>
+
+    <div class="addendum-header"><span class="addendum-title">Addendum A — Seed Script</span><span class="addendum-tag">SQL · H2 and Postgres compatible</span></div>
+    <div class="code-block"><pre><span class="cm">-- StockPulse · Seed Data
+-- Adapt table/column names to your schema</span>
+
+<span class="kw">INSERT INTO</span> products (id, sku, name, category, current_price, stock_level, reorder_threshold, demand_velocity, status) <span class="kw">VALUES</span>
+  (<span class="st">'PRD-001'</span>, <span class="st">'SKU-ELEC-001'</span>, <span class="st">'Wireless Earbuds Pro'</span>,     <span class="st">'ELECTRONICS'</span>, <span class="nu">79.99</span>,  <span class="nu">45</span>,  <span class="nu">20</span>, <span class="nu">3</span>,  <span class="st">'ACTIVE'</span>),
+  (<span class="st">'PRD-002'</span>, <span class="st">'SKU-ELEC-002'</span>, <span class="st">'USB-C Hub 7-Port'</span>,           <span class="st">'ELECTRONICS'</span>, <span class="nu">34.99</span>,  <span class="nu">120</span>, <span class="nu">30</span>, <span class="nu">1</span>,  <span class="st">'ACTIVE'</span>),
+  (<span class="st">'PRD-003'</span>, <span class="st">'SKU-APP-001'</span>,  <span class="st">'Organic Cotton T-Shirt'</span>,     <span class="st">'APPAREL'</span>,     <span class="nu">24.99</span>,  <span class="nu">8</span>,   <span class="nu">15</span>, <span class="nu">12</span>, <span class="st">'PRICE_REVIEW_PENDING'</span>),
+  (<span class="st">'PRD-004'</span>, <span class="st">'SKU-APP-002'</span>,  <span class="st">'Running Shorts — Navy'</span>,      <span class="st">'APPAREL'</span>,     <span class="nu">39.99</span>,  <span class="nu">55</span>,  <span class="nu">20</span>, <span class="nu">2</span>,  <span class="st">'ACTIVE'</span>),
+  (<span class="st">'PRD-005'</span>, <span class="st">'SKU-HOME-001'</span>, <span class="st">'Ceramic Pour-Over Set'</span>,      <span class="st">'HOME'</span>,        <span class="nu">49.99</span>,  <span class="nu">22</span>,  <span class="nu">10</span>, <span class="nu">4</span>,  <span class="st">'ACTIVE'</span>),
+  (<span class="st">'PRD-006'</span>, <span class="st">'SKU-HOME-002'</span>, <span class="st">'LED Desk Lamp — Dimmable'</span>,   <span class="st">'HOME'</span>,        <span class="nu">59.99</span>,  <span class="nu">0</span>,   <span class="nu">15</span>, <span class="nu">0</span>,  <span class="st">'OUT_OF_STOCK'</span>),
+  (<span class="st">'PRD-007'</span>, <span class="st">'SKU-ELEC-003'</span>, <span class="st">'Portable Charger 20K'</span>,       <span class="st">'ELECTRONICS'</span>, <span class="nu">44.99</span>,  <span class="nu">18</span>,  <span class="nu">25</span>, <span class="nu">8</span>,  <span class="st">'ACTIVE'</span>),
+  (<span class="st">'PRD-008'</span>, <span class="st">'SKU-APP-003'</span>,  <span class="st">'Hoodie — Heather Grey'</span>,      <span class="st">'APPAREL'</span>,     <span class="nu">54.99</span>,  <span class="nu">11</span>,  <span class="nu">12</span>, <span class="nu">15</span>, <span class="st">'ACTIVE'</span>);
+
+<span class="cm">-- PRD-003 (T-Shirt): stock 8, threshold 15 — already low, good for immediate demo
+-- PRD-008 (Hoodie): stock 11, threshold 12, velocity 15 — demand spike demo:
+--   POST /products/PRD-008/orders simulates viral sale</span></pre></div>
+
+    <div class="callout info" style="margin-bottom:28px">
+      <div class="callout-label">Demo paths</div>
+      <strong>Inventory low:</strong> POST order on PRD-003 until stock &lt; 15 → auto pricing + reorder suggestions.<br>
+      <strong>Demand spike:</strong> POST multiple orders on PRD-008 → velocity crosses threshold → spike-triggered suggestions.
+    </div>
+
+    <div class="addendum-header"><span class="addendum-title">Addendum B — LLM Gateway Utility</span><span class="addendum-tag">Java · Gemini · Groq · Ollama</span></div>
+    <div class="code-block"><pre><span class="kw">package</span> com.stockpulse.ai;
+
+<span class="kw">import</span> org.springframework.beans.factory.annotation.Value;
+<span class="kw">import</span> org.springframework.stereotype.Component;
+<span class="kw">import</span> org.springframework.web.client.RestClient;
+<span class="kw">import</span> java.util.List;
+<span class="kw">import</span> java.util.Map;
+
+<span class="cm">/**
+ * Provider-specific HTTP for Gemini, Groq, Ollama.
+ * Returns raw text — parsing, validation, fallback are yours.
+ *
+ * Configure in application.properties:
+ *   llm.provider  = gemini
+ *   llm.api-key   = ${LLM_API_KEY}
+ *   llm.model     = gemini-1.5-flash
+ *   llm.base-url  = https://generativelanguage.googleapis.com
+ */</span>
+<span class="an">@Component</span>
+<span class="kw">public class</span> <span class="ty">LLMGateway</span> {
+
+    <span class="an">@Value</span>(<span class="st">"${llm.provider}"</span>) <span class="kw">private</span> <span class="ty">String</span> provider;
+    <span class="an">@Value</span>(<span class="st">"${llm.api-key:}"</span>) <span class="kw">private</span> <span class="ty">String</span> apiKey;
+    <span class="an">@Value</span>(<span class="st">"${llm.model}"</span>) <span class="kw">private</span> <span class="ty">String</span> model;
+    <span class="an">@Value</span>(<span class="st">"${llm.base-url}"</span>) <span class="kw">private</span> <span class="ty">String</span> baseUrl;
+    <span class="kw">private final</span> <span class="ty">RestClient</span> http = <span class="ty">RestClient</span>.create();
+
+    <span class="kw">public</span> <span class="ty">String</span> callLLM(<span class="ty">String</span> prompt) {
+        <span class="kw">return switch</span> (provider.toLowerCase()) {
+            <span class="kw">case</span> <span class="st">"gemini"</span> -> callGemini(prompt);
+            <span class="kw">case</span> <span class="st">"groq"</span>   -> callOpenAICompatible(prompt, baseUrl + <span class="st">"/openai/v1/chat/completions"</span>);
+            <span class="kw">case</span> <span class="st">"ollama"</span> -> callOpenAICompatible(prompt, baseUrl + <span class="st">"/v1/chat/completions"</span>);
+            <span class="kw">default</span>      -> <span class="kw">throw new</span> <span class="ty">IllegalStateException</span>(<span class="st">"Unknown provider: "</span> + provider);
+        };
+    }
+
+    <span class="kw">private</span> <span class="ty">String</span> callGemini(<span class="ty">String</span> prompt) { <span class="cm">/* same as FleetMind */</span> <span class="kw">return</span> <span class="st">""</span>; }
+    <span class="kw">private</span> <span class="ty">String</span> callOpenAICompatible(<span class="ty">String</span> prompt, <span class="ty">String</span> url) { <span class="kw">return</span> <span class="st">""</span>; }
+}</pre></div>
+    <div class="callout warn" style="margin-bottom:48px">
+      <div class="callout-label">Keep API key out of repo</div>
+      Use <code>@Value("${llm.api-key}")</code> from environment variable. Public repos with committed keys get revoked within minutes.
+    </div>
+  </div>
+</div>
+<script>
+function sw(id, el) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('panel-' + id).classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+</script>
+</body>
+</html>
